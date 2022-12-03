@@ -99,9 +99,10 @@ int main(int argc, char* argv[]) {
     while (fgets(buf,BUFSIZE,fp)) {
 	model_input = strtok(buf,":");
 	model_output = strtok(NULL,":");
-	if(judge(argv[1],model_input, model_output) == 1) {
-	    return -1;
+	if(judge(argv[1],model_input, model_output) == -1) { 
 	    printf("오답\n");
+	    return -1;
+	
 	}
     }
 
