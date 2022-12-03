@@ -1,4 +1,6 @@
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -9,9 +11,11 @@
 #define PORTNUM 9000
 #define MAX_CLNT 10
 
+/********* Critical Section *********/
 int clnt_socks[MAX_CLNT]; //CLNT마다 할당될 sock파일 fd 배열
 int clnt_count = 0; //현재 접속한 클라이언트 수
-//mutex
+/********* Critical Section *********/
+
 
 
 //서버는 statemachine 으로 ..? 
@@ -20,6 +24,7 @@ int main() {
     char buf[256];
     struct sockaddr_in sin, cli;
     int sd, ns, clientlen = sizeof(cli);
+    pid_t pid;
 
     //Socket 생성
     //AF_INET: IPv4 인터넷 프로토콜 사용
@@ -55,6 +60,17 @@ int main() {
 	    perror("accept");
 	    exit(1);
 	}
+	
+	if ((pid = fork()) < 0) { //fork failed
+	    perror("fork");
+	    exit(1);
+	}
+
+	if(pid == 0) { //child process
+
+
+
+
 
 	//전역변수 사용 위해 mutual exclusive 
     }
