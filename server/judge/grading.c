@@ -10,6 +10,7 @@
 
 int judge(char* execfn, char* model_input, char* model_output) {
 
+    
     //양방향 파이프 사용
     int fd1[2], fd2[2];
     pid_t pid;
@@ -31,8 +32,8 @@ int judge(char* execfn, char* model_input, char* model_output) {
 	    perror("fork");
 	    exit(1);
 	    break;
-//////////////////////////////////////////////////////////////////
 	case 0:
+
 	    close(fd1[1]);
 	    close(fd2[0]);
 
@@ -59,19 +60,27 @@ int judge(char* execfn, char* model_input, char* model_output) {
 	    exit(1);
 	    break;
 	default:
-	    sleep(2); //sync...
-	    close(fd1[0]);
-	    close(fd2[0]);
 
-	    write(fd1[1], model_input, 3);
-	    //bad file descriptor
+	    sleep(2); //sync...
+
+	    close(fd1[0]);
+	    close(fd2[1]);
+
+	    model_input = strcat(model_input, "\n");
+	    char* model_out;
+	    strcpy(model_output, model_out);
+	    write(fd1[1], model_input,(int) strlen(model_input));
+
+	    waitpid(pid, &status, 0);
 	    len = read(fd2[0],buf,256);
-	    perror("read");
-	    
+	    buf[len] = '\0';
 	    printf("len: %d\n", len);
-	    if(strcmp(buf, model_output) != 0) {
-		printf("buf: %s\n", buf);
-		printf("mod_out: %s\n", model_output);
+	    printf("model_out: %s\n",model_out);
+
+	    
+	    if(strcmp(buf, model_out) != 0) {
+		printf("buf: %s", buf);
+		printf("mod_out: %s\n", model_out);
 		return -1;
 	    }
 	    else {
@@ -99,10 +108,10 @@ int main(int argc, char* argv[]) {
     while (fgets(buf,BUFSIZE,fp)) {
 	model_input = strtok(buf,":");
 	model_output = strtok(NULL,":");
+	//model out 잘 설정된 것 확인 
 	if(judge(argv[1],model_input, model_output) == -1) { 
 	    printf("오답\n");
 	    return -1;
-	
 	}
     }
 
