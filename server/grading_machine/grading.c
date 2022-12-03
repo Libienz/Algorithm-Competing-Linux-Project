@@ -4,74 +4,108 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-int main(int argc, char* argv[]){
+
+#define BUFSIZE 257
 
 
-    int status; 
-  pid_t pid;
-  char *inputanswer[6];
-  char *inputzip[10];
-  char *solzip[10];
-  char buffer[100];
-  char* comp_input;
-  char* comp_output;
+int judge(char* execfn, char* model_input, char* model_output) {
 
-  int i;
-  int idx;
-  int j; 
-  FILE* fp;
+    //양방향 파이프 사용
+    int fd1[2], fd2[2];
+    pid_t pid;
+    char buf[BUFSIZE];
+    int len, status;
 
-  if ((fp = fopen("1.sol","r"))==NULL){
-	perror("fopen: 1.sol");
+    if (pipe(fd1) == -1) {
+	perror("pipe");
 	exit(1);
-  }
+    }
 
-  idx=0;
-  while(fgets(buffer,100,fp) != NULL){
-	comp_input = strtok(buffer,":");
-	comp_output = strtok(NULL,":");
-	printf("input: %s\n", comp_input);
-	printf("input: %s\n", comp_output);
-  }
-
-  /*
-  for (j=0; j<idx; j++){
-	printf("%s %s \n",inputzip[j],solzip[j]);
-  }
-  fclose(fp);
-  
-  switch( pid= fork()){
-   case -1:
-	perror("fork");
+    if (pipe(fd2) == -1) {
+	perror("pipe");
 	exit(1);
-	break;
-    case 0:
-	printf("child\n");
-	inputanswer[0] ="./test1";	
-        inputanswer[1] ="3";
-        inputanswer[2] ="asdf";
-        inputanswer[3] ="qwer";
-        inputanswer[4] ="qwer";
-	inputanswer[5] =NULL;
+    }
+
+    switch (pid= fork()) {
+	case -1 :
+	    perror("fork");
+	    exit(1);
+	    break;
+//////////////////////////////////////////////////////////////////
+	case 0:
+	    close(fd1[1]);
+	    close(fd2[0]);
+
+	    //자식 프로세스는 표준 입력을 fd[0]이 가리키는 파이프에서 읽는다
+	    if(fd1[0] != 0) {
+		dup2(fd1[0], 0);
+		close(fd1[0]);
+	    }
 	
+	    //자식 프로세스는 자신의 표준 출력을 fd[2]가 가리키는 파이프로 보낸다
+	    if(fd2[1] != 1) {
+		dup2(fd2[1], 1);
+		close(fd2[1]);
+	    }
 
-	if(execvp("./test1",inputanswer)==-1){
+	    //유저 제출물 실행
+	    char *argv[1];
+	    argv[0] = NULL;
+	    if (execv(execfn,argv) == -1) {
 		perror("execlp");
-
-
 		exit(1);
+	    }
+
+	    exit(1);
+	    break;
+	default:
+	    sleep(2); //sync...
+	    close(fd1[0]);
+	    close(fd2[0]);
+
+	    write(fd1[1], model_input, 3);
+	    //bad file descriptor
+	    len = read(fd2[0],buf,256);
+	    perror("read");
+	    
+	    printf("len: %d\n", len);
+	    if(strcmp(buf, model_output) != 0) {
+		printf("buf: %s\n", buf);
+		printf("mod_out: %s\n", model_output);
+		return -1;
+	    }
+	    else {
+		return 1;
+	    }
+    }
+}
+
+//argv[1]: execfn
+//argv[2]: solfn
+int main(int argc, char* argv[]) {
+
+    FILE* fp;
+    char buf[BUFSIZE];
+    int c;
+    char* model_input;
+    char* model_output;
+
+    if ((fp = fopen(argv[2],"r")) == NULL) {
+	perror("fopen");
+	exit(1);
+    }
+
+    //우선 한줄만 .. 근데 이거 여러줄로도 할 수 있음
+    while (fgets(buf,BUFSIZE,fp)) {
+	model_input = strtok(buf,":");
+	model_output = strtok(NULL,":");
+	if(judge(argv[1],model_input, model_output) == 1) {
+	    return -1;
+	    printf("오답\n");
 	}
-	exit(0);
-	break;
+    }
 
-    default :
-	while(wait(&status) != pid)
-  	  continue;
-	printf("parent\n");
-	break;
-
-
-  }
-  */
+    printf("정답\n");
+    return 0;
 
 }
