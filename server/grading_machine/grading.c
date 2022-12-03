@@ -4,14 +4,18 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-int main(){
-  int status; 
+int main(int argc, char* argv[]){
+
+
+    int status; 
   pid_t pid;
   char *inputanswer[6];
   char *inputzip[10];
   char *solzip[10];
   char buffer[100];
-  char *token;
+  char* comp_input;
+  char* comp_output;
+
   int i;
   int idx;
   int j; 
@@ -24,30 +28,20 @@ int main(){
 
   idx=0;
   while(fgets(buffer,100,fp) != NULL){
-	i=0;
-	token = strtok(buffer,":");
-	printf("%d %s",idx,token);
-	while(token != NULL){
-		if(i==0){
-			inputzip[idx]=token;
-		}
-		else if(i==1){
-	                solzip[idx]=token;
-		}
-		i++;
-		token = strtok(NULL,":");
-	        printf("%d %s",idx,token);
-
-	}
-	idx++;  
+	comp_input = strtok(buffer,":");
+	comp_output = strtok(NULL,":");
+	printf("input: %s\n", comp_input);
+	printf("input: %s\n", comp_output);
   }
+
+  /*
   for (j=0; j<idx; j++){
 	printf("%s %s \n",inputzip[j],solzip[j]);
   }
   fclose(fp);
   
   switch( pid= fork()){
-    case -1:
+   case -1:
 	perror("fork");
 	exit(1);
 	break;
@@ -78,4 +72,6 @@ int main(){
 
 
   }
+  */
+
 }

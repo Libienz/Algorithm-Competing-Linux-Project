@@ -9,17 +9,11 @@
 #include <stdio.h>
 
 #define PORTNUM 9000
-#define MAX_CLNT 10
+#define MAX_CLNT 2
 
-/********* Critical Section *********/
 int clnt_socks[MAX_CLNT]; //CLNT마다 할당될 sock파일 fd 배열
 int clnt_count = 0; //현재 접속한 클라이언트 수
-/********* Critical Section *********/
 
-
-
-//서버는 statemachine 으로 ..? 
-//fork는 어디에 ..?
 int main() {
     char buf[256];
     struct sockaddr_in sin, cli;
@@ -60,28 +54,33 @@ int main() {
 	    perror("accept");
 	    exit(1);
 	}
-	
-	if ((pid = fork()) < 0) { //fork failed
-	    perror("fork");
-	    exit(1);
+	clnt_socks[clnt_count++] = ns;
+	//요청은 fork로 태어난 자식이 처리 한다 
+	switch (fork()) {
+	    case 0: 
+		strcpy(buf, "server connected");
+		if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
+		    perror("send");
+		    exit(1);
+		}
+		//방 만들기 참가하기 .. 
+		//ready ready
+		//random generator 문제 출제 ftp 
+		//자식 프로세스들 sig 받을 때 까지 wait 
+		//sig 받으면 다시 fork 해서 채점기 execlp 
+		//정답인지 확인 
+
+
+
+		break;
 	}
 
-	if(pid == 0) { //child process
 
 
 
-
-
-	//전역변수 사용 위해 mutual exclusive 
     }
 
-    sprintf(buf, "Welcome Algorithm competing");
     
-    //메세지 전송 
-    if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
-	perror("send");
-	exit(1);
-    }
     close(ns);
     close(sd);
 

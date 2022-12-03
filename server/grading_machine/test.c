@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-int main(int argc, char *argv[]){
+int main(){
+    
 
-  int n;
-  n= atoi(argv[1]);
-  for(int i=2; i<=n+1; i++){
-    printf("%s \n",argv[i]);
-  }
+    int num1, num2;
+
+    scanf("%d %d", &num1, &num2);
+    printf("%d\n",num1 + num2);
 
 }
 
