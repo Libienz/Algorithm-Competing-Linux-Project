@@ -68,8 +68,10 @@ int judge(char* execfn, char* model_input, char* model_output) {
 
 	    model_input = strcat(model_input, "\n");
 	    char* model_out;
+	    model_output = strcat(model_output, "\0");
 	    strcpy(model_output, model_out);
-	    write(fd1[1], model_input,(int) strlen(model_input));
+	    printf("model_out: %s\n",model_out);
+	    write(fd1[1], model_input,(int) strlen(model_input)+1);
 
 	    waitpid(pid, &status, 0);
 	    len = read(fd2[0],buf,256);
