@@ -20,7 +20,7 @@ int main() {
     memset((char *)&sin, '\0', sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORTNUM);//HBO -> NBO
-    sin.sin_addr.s_addr = inet_addr("192.168.147.129");//str IP addr -> bin
+    sin.sin_addr.s_addr = inet_addr("10.0.2.15");//str IP addr -> bin
 
     //Socket 생성
     //AF_INET: IPv4 인터넷 프로토콜 사용

@@ -33,7 +33,7 @@ int main() {
     memset((char *)&sin, '\0', sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORTNUM); //HBO -> NBO
-    sin.sin_addr.s_addr = inet_addr("192.168.147.129"); //str IP addr -> bin
+    sin.sin_addr.s_addr = inet_addr("10.0.2.15"); //str IP addr -> bin
 
     //bind: 소켓 파일 기술자를 지정된 IPaddr/Port와 결합
     if (bind(sd, (struct sockaddr *) &sin, sizeof(sin))) {
@@ -46,39 +46,24 @@ int main() {
 	perror("listen");
 	exit(1);
     }
-
-    while (1) {
 	
-	//연결 요청 수락 
-	if ((ns = accept(sd, (struct sockaddr *)&cli, &clinetlen)) == -1) {
-	    perror("accept");
-	    exit(1);
-	}
-	clnt_socks[clnt_count++] = ns;
-	//요청은 fork로 태어난 자식이 처리 한다 
-	switch (fork()) {
-	    case 0: 
-		strcpy(buf, "server connected");
-		if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
-		    perror("send");
-		    exit(1);
-		}
+    //연결 요청 수락 
+    if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
+	perror("accept");
+        exit(1);
+    }
+    sprintf(buf, "server connected");
+    if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
+	perror("send");
+	exit(1);
+    }
+
 		//방 만들기 참가하기 .. 
 		//ready ready
 		//random generator 문제 출제 ftp 
 		//자식 프로세스들 sig 받을 때 까지 wait 
 		//sig 받으면 다시 fork 해서 채점기 execlp 
-		//정답인지 확인 
-
-
-
-		break;
-	}
-
-
-
-
-    }
+		//정답인지 확인
 
     
     close(ns);
