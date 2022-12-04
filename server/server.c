@@ -53,12 +53,15 @@ int main() {
 	    perror("accept");
 	    exit(1);
 	 }
-        sprintf(buf, "server connected");
+/*        
+	sprintf(buf, "server connected");
         if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
 	    perror("send");
 	    exit(1);
 	 }
-	//notifyall(ns, settingmsg);
+*/
+
+	//연결 성공을 알리고 settingmsg 출력
 	myfileprint("settingmsg.txt");	
     
 	
@@ -68,7 +71,6 @@ int main() {
     }
 
     
-    //cf> printf()를 통해 서버 컴퓨터에 알림
     //ready 들어올 때 까지 wait 
 	//ready 눌렀는데 상대방이 ready가 되지 않았다면 상대방의 ready 기다리는 중 이런식으로 출력
     //둘다 ready 되었다면 game_start라는 제어로 넘어감 
