@@ -97,9 +97,8 @@ int main(int argc, char* argv[]) {
 
     FILE* fp;
     char buf[BUFSIZE];
-    int c;
-    char* model_input;
-    char* model_output;
+    char model_input[BUFSIZE];
+    char model_output[BUFSIZE];
 
     if ((fp = fopen(argv[2],"r")) == NULL) {
 	perror("fopen");
@@ -107,10 +106,11 @@ int main(int argc, char* argv[]) {
     }
 
     //우선 한줄만 .. 근데 이거 여러줄로도 할 수 있음
-    while (fgets(buf,BUFSIZE,fp)) {
-	model_input = strtok(buf,":");
-	model_output = strtok(NULL,":");
-	//model out 잘 설정된 것 확인 
+    while (fgets(buf,BUFSIZE,fp) != NULL) {
+	
+	strcpy(model_input, strtok(buf,":"));
+	strcpy(model_output, strtok(NULL,":"));
+    
 	if(judge(argv[1],model_input, model_output) == -1) { 
 	    printf("오답\n");
 	    return -1;
