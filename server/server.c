@@ -10,16 +10,16 @@
 
 #define PORTNUM 9000
 #define MAX_CLNT 2
-
-int clnt_socks[MAX_CLNT]; //CLNT마다 할당될 sock파일 fd 배열
-int clnt_count = 0; //현재 접속한 클라이언트 수
+#define BUFSIZE 1024
+void myfileprint(char* path);
 
 int main() {
-    char buf[256];
+    char buf[BUFSIZE];
     struct sockaddr_in sin, cli;
     int sd, ns, clientlen = sizeof(cli);
     pid_t pid;
 
+     
     //Socket 생성
     //AF_INET: IPv4 인터넷 프로토콜 사용
     //SOCK_STREAM: TCP 사용
@@ -33,7 +33,7 @@ int main() {
     memset((char *)&sin, '\0', sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORTNUM); //HBO -> NBO
-    sin.sin_addr.s_addr = inet_addr("10.0.2.15"); //str IP addr -> bin
+    sin.sin_addr.s_addr = inet_addr("192.168.219.107"); //str IP addr -> bin
 
     //bind: 소켓 파일 기술자를 지정된 IPaddr/Port와 결합
     if (bind(sd, (struct sockaddr *) &sin, sizeof(sin))) {
@@ -47,29 +47,55 @@ int main() {
 	exit(1);
     }
 	
-    //연결 요청 수락 
-    if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
-	perror("accept");
-        exit(1);
-    }
-    sprintf(buf, "server connected");
-    if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
-	perror("send");
-	exit(1);
+    while (1) {
+	
+	if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
+	    perror("accept");
+	    exit(1);
+	 }
+        sprintf(buf, "server connected");
+        if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
+	    perror("send");
+	    exit(1);
+	 }
+	//notifyall(ns, settingmsg);
+	myfileprint("settingmsg.txt");	
+    
+	
+	
+
+
     }
 
-		//방 만들기 참가하기 .. 
-		//ready ready
-		//random generator 문제 출제 ftp 
-		//자식 프로세스들 sig 받을 때 까지 wait 
-		//sig 받으면 다시 fork 해서 채점기 execlp 
-		//정답인지 확인
+    
+    //cf> printf()를 통해 서버 컴퓨터에 알림
+    //ready 들어올 때 까지 wait 
+	//ready 눌렀는데 상대방이 ready가 되지 않았다면 상대방의 ready 기다리는 중 이런식으로 출력
+    //둘다 ready 되었다면 game_start라는 제어로 넘어감 
+    //서버는 while로 signal 받을 때 까지 대기중 
+    //누군가 judge를 이용해서 정답을 맞추었다면 깨어남 
+    //게임 결과 및 게임 종료한다고 출력
+
 
     
     close(ns);
     close(sd);
 
 }
+   
 
+void myfileprint(char* path) {
+    
+    FILE* fp;
+    char buf[BUFSIZE];
+    int n;
 
-     
+    fp = fopen(path, "r");
+
+    while(fgets(buf, BUFSIZE,fp) != NULL) {
+	printf("%s",buf);
+    }
+    printf("\n");
+
+    fclose(fp);
+}

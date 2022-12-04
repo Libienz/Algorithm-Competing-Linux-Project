@@ -8,10 +8,13 @@
 #include <string.h>
 
 #define PORTNUM 9000
+#define BUFSIZE 256
+
+void myfileprint(char* path);
 
 int main() {
     int sd, len;
-    char buf[256];
+    char buf[BUFSIZE];
     struct sockaddr_in sin;
 
     //서버 IP 주소 지정과 포트 번호 설정
@@ -20,7 +23,7 @@ int main() {
     memset((char *)&sin, '\0', sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORTNUM);//HBO -> NBO
-    sin.sin_addr.s_addr = inet_addr("10.0.2.15");//str IP addr -> bin
+    sin.sin_addr.s_addr = inet_addr("192.168.219.107");//str IP addr -> bin
 
     //Socket 생성
     //AF_INET: IPv4 인터넷 프로토콜 사용
@@ -41,6 +44,11 @@ int main() {
     //recv 함수는 소켓 sd를 통해 전송받은 메시지를 sizeof(buf)크기인 버퍼buf에 저장한다.
     //마지막 인자인 0은 flag고 send()함수에서 사용하는 플래그와 같다.
     printf("==> Connect Server\n");
+    myfileprint("settingmsg.txt");
+    if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
+        perror("recv");
+        exit(1);
+    }
     if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
         perror("recv");
         exit(1);
@@ -51,3 +59,20 @@ int main() {
     //소켓을 닫는다.
     close(sd);
 }
+
+void myfileprint(char * path) {
+
+    FILE* fp;
+    char buf[BUFSIZE];
+    int n;
+
+    fp = fopen(path, "r");
+ 
+    while(fgets(buf, BUFSIZE,fp) != NULL) {
+       printf("%s",buf);
+    }
+    printf("\n");
+
+    fclose(fp);
+}
+
