@@ -11,7 +11,9 @@
 #define PORTNUM 9000
 #define MAX_CLNT 2
 #define BUFSIZE 1024
+
 void myfileprint(char* path);
+void msgsend(int ns, char* buf);
 
 int main() {
     char buf[BUFSIZE];
@@ -47,12 +49,13 @@ int main() {
 	exit(1);
     }
 	
+    if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
+	perror("accept");
+	exit(1);
+     }
+
     while (1) {
 	
-	if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
-	    perror("accept");
-	    exit(1);
-	 }
 /*        
 	sprintf(buf, "server connected");
         if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
@@ -63,10 +66,18 @@ int main() {
 
 	//연결 성공을 알리고 settingmsg 출력
 	myfileprint("settingmsg.txt");	
-    
-	
-	
+	while(1) {
+	    char buf[BUFSIZE];
+	    scanf("%s", buf);
+	    if (strcmp(buf, "ready") == 0) {
+		printf("me ready\n");
+		msgsend(ns, "상대 측 준비완료\n");
+	    }
+	    else {
+		printf("준비되었으면 ready를 입력해주세요\n");
+	    }
 
+	}
 
     }
 
@@ -84,8 +95,14 @@ int main() {
     close(sd);
 
 }
-   
 
+void msgsend(int ns, char* buf) {
+
+    if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
+	perror("send");
+	exit(1);
+    }
+}
 void myfileprint(char* path) {
     
     FILE* fp;

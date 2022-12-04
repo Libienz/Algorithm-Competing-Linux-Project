@@ -45,6 +45,8 @@ int main() {
     //마지막 인자인 0은 flag고 send()함수에서 사용하는 플래그와 같다.
     printf("==> Connect Server\n");
     myfileprint("settingmsg.txt");
+
+    
     if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
         perror("recv");
         exit(1);
@@ -53,6 +55,11 @@ int main() {
         perror("recv");
         exit(1);
     }
+    if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
+        perror("recv");
+        exit(1);
+    }
+
     buf[len] = '\0';
 
     printf("==> From Server : %s\n", buf);
