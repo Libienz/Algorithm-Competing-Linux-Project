@@ -1,16 +1,22 @@
 #include <stdio.h>
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-int main()
-{
-	int n,x,input,i;
+int DP[18];
+int t[18];
+int p[18];
 
-	scanf("%d %d", &n, &x);
+int main() {
+    int n, prev;
+    scanf("%d", &n);
+    for (int i = 1; i <= n; i++)
+        scanf("%d %d", &t[i], &p[i]);
 
-	for(i =0; i<n ;i++)
-	{
-		scanf("%d",&input);
-	
-		if(input <x)
-			printf("%d ",input);
-	}
-}	
+    for (int i = n; i > 0; i--) {
+        prev = i + t[i];
+        if (prev > n + 1) DP[i] = DP[i + 1];
+        else DP[i] = MAX(DP[i + 1], DP[prev] + p[i]);
+    }
+    printf("%d\n", DP[1]);
+
+    return 0;
+}
