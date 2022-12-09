@@ -8,12 +8,16 @@
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <time.h>
+#include <fcntl.h>
+
 
 
 #define PORTNUM 9000
 #define BUFSIZE 1024
 #define MAX_CLNT 2 // 최대 동시 접속 가능 수
 #define SERV_IP "192.168.219.107"
+#define QNUM 3 //문제 갯수
 void *handle_clnt(void *arg); 
 void myfileprint(char* path);
 void msgsend(int ns, char* buf);
@@ -24,10 +28,16 @@ void msgsend(int ns, char* buf);
 
 int clnt_cnt = 0; //연결된 클라이언트 수
 int clnt_socks[MAX_CLNT]; // 클라이언트 배열
+pthread_t t_ids[MAX_CLNT];//쓰레드 아이디 배열
 pthread_mutex_t mutx; //mutex 선언
 
 /********* Critical Section***************/
+char qpath[BUFSIZE]; //랜덤으로 출제된 문제파일의 경로
+
 int main() {
+    
+    int qnum;
+    int gamedone = 0;
     char buf[BUFSIZE];
     struct sockaddr_in sin, cli;
     pthread_t t_id;
@@ -62,31 +72,41 @@ int main() {
 	exit(1);
     }
 	
-    while (clnt_cnt < 2) { //두명 까지만 받을 거임 
-    
-	if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
-	    perror("accept");
-	    exit(1);
-	}
+    while (1) {
+
+	while (clnt_cnt < 2) { 
+
+	    if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
+		perror("accept");
+		exit(1);
+	    }
 	
-	pthread_mutex_lock(&mutx); //mutex lock
-	clnt_socks[clnt_cnt++] = ns;
-	pthread_mutex_unlock(&mutx); //mutex unlock
-	pthread_create(&t_id, NULL, handle_clnt,(void *)&ns);
-	//pthread_detach(t_id);
+	    pthread_mutex_lock(&mutx); //mutex lock
+	    pthread_create(&t_id, NULL, handle_clnt,(void *)&ns);
+	    clnt_socks[clnt_cnt] = ns;
+	    t_ids[clnt_cnt++] = t_id;
+	    pthread_mutex_unlock(&mutx); //mutex unlock
+	    pthread_detach(t_id);
+    
+	}
+    
+	//문제 고르기
+       srand(time(0));
+       qnum = (rand() % QNUM) +1;
+       sprintf(qpath,"./judge/questions/%d.txt",qnum);
+       
+
+
+	//게임끝날 때 까지 기달 
+	while(!gamedone);
+
+	//battle done 
+	pthread_detach(t_ids[0]);
+	pthread_detach(t_ids[1]);
+	//clnt_
     }
-    while(1);
-
-    
-    //ready 들어올 때 까지 wait 
-	//ready 눌렀는데 상대방이 ready가 되지 않았다면 상대방의 ready 기다리는 중 이런식으로 출력
-    //둘다 ready 되었다면 game_start라는 제어로 넘어감 
-    //서버는 while로 signal 받을 때 까지 대기중 
-    //누군가 judge를 이용해서 정답을 맞추었다면 깨어남 
-    //게임 결과 및 게임 종료한다고 출력
 
 
-    
     close(ns);
     close(sd);
 
@@ -96,28 +116,20 @@ void *handle_clnt(void *arg){
     char buf[BUFSIZE];
     int ns = *((int *)arg);
     msgsend(ns, "서버와 연결되었습니다");
-    sleep(1);
     msgsend(ns, "상대방의 입장을 기다리는 중입니다...");
-    sleep(1);
     while (clnt_cnt < 2); //busy wating
     msgsend(ns,"상대방이 입장했습니다");
-
+    msgsend(ns, "서버가 random 문제를 출제 중입니다...");
     
 }
     
-    //if room filled start game 
-    
-    //generate rand num and send prb
-
-    
-
-    //if create then create
 void msgsend(int ns, char* buf) {
 
     if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
 	perror("send");
 	exit(1);
     }
+    sleep(1);
 }
 
 
