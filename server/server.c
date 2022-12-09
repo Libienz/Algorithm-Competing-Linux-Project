@@ -110,10 +110,10 @@ void *handle_clnt(void *arg){
     sleep(1);
     msgsend(ns, "join or create battle");
     sleep(1);
-    msgsend(ns, "input join or create");
 
     
     while (join ==0 && create ==0 ) {
+	msgsend(ns, "input join or create");
 	if(recv(ns,buf,sizeof(buf) ,0) == -1) {
 	    perror("recv");
 	    exit(1);
@@ -128,8 +128,11 @@ void *handle_clnt(void *arg){
     if (join) {
 	//list rooms
 	for (int i = 0; i<room_cnt; i++) {
+	    sleep(1);
 	    msgsend(ns,rooms[i].title);
 	}
+	printf("join\n");
+	printf("%s\n",rooms[0].title);
 	//participate room
 
 	//game start
@@ -143,6 +146,8 @@ void *handle_clnt(void *arg){
 	rooms[room_cnt].usr1 = ns;
 	pthread_mutex_unlock(&mutx); //mutex unlock
 	//wait
+	printf("create\n");
+	printf("%s\n",rooms[0].title);
     }
 }
     

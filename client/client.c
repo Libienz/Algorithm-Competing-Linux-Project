@@ -9,8 +9,11 @@
 
 #define PORTNUM 9000
 #define BUFSIZE 256
+#define SERV_IP "192.168.219.107"
 
 void myfileprint(char* path);
+void rcvprint(int sd);
+void msgsend(int ns, char* buf);
 
 int main() {
     int sd, len;
@@ -23,7 +26,7 @@ int main() {
     memset((char *)&sin, '\0', sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORTNUM);//HBO -> NBO
-    sin.sin_addr.s_addr = inet_addr("192.168.219.107");//str IP addr -> bin
+    sin.sin_addr.s_addr = inet_addr(SERV_IP);//str IP addr -> bin
 
     //Socket 생성
     //AF_INET: IPv4 인터넷 프로토콜 사용
@@ -45,28 +48,39 @@ int main() {
     //마지막 인자인 0은 flag고 send()함수에서 사용하는 플래그와 같다.
     printf("==> Connect Server\n");
 //    myfileprint("settingmsg.txt");
+    rcvprint(sd);
+    rcvprint(sd);
+    rcvprint(sd);
 
-    
-    if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-    printf("%s\n",buf);
-    if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-    printf("%s\n",buf);
-    if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-    printf("%s\n",buf);
+    scanf("%s",buf);
+    msgsend(sd, buf);
+
+    scanf("%s",buf);
+    msgsend(sd, buf);
 
 
     //소켓을 닫는다.
     close(sd);
 }
+void msgsend(int ns, char* buf) {
+
+    if(send(ns,buf,strlen(buf)+1, 0) == -1) {
+	perror("send");
+	exit(1);
+    }
+}
+void rcvprint(int sd) {
+    
+    char buf[BUFSIZE];
+    int len;
+
+    if ((len=recv(sd,buf,sizeof(buf),0)) == -1) {
+	perror("recv");
+	exit(1);
+    }
+    printf("%s\n",buf);
+}
+
 
 void myfileprint(char * path) {
 
