@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #define BUFSIZE 4096
 
@@ -18,18 +17,6 @@
    사용하기 위한 명령은 다음과 같다
    ./judgeproc [progname] [sol_file_name]
 */
-
-char* rtrim(char* s) {
-    char t[BUFSIZE];
-    char *end;
-    strcpy(t,s);
-    end = t+strlen(t) - 1;
-    while(end != t && isspace(*end))
-	end--;
-    *(end + 1) = '\0';
-    s = t;
-    return s;
-}
 
 int main(int argc, char* argv[]) {
 
@@ -134,7 +121,6 @@ int main(int argc, char* argv[]) {
 		    perror("read");
 		    exit(1);
 		}
-		rtrim(buf);
 //		while (buf[len] == '\n' || buf[len] == '\t' || buf[len] == ' ') len--;
 //		if (buf[len-1] == '\n') {
 //		    buf[len-1] = '\0';
@@ -145,8 +131,9 @@ int main(int argc, char* argv[]) {
 //		}
 
 		//buf[len] = '\0';
-		len = strlen(buf);
-		model_output[len] = '\0';
+		len = strlen(model_output);
+		buf[len-1]= '\0';
+		model_output[len-1] = '\0';
 		printf("buf: %s\n",buf);
 		printf("buf.len %ld\n", strlen(buf));
 		printf("model: %s\n",model_output);
