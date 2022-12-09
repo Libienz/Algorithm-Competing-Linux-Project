@@ -86,7 +86,7 @@ int main() {
 	    clnt_socks[clnt_cnt] = ns;
 	    t_ids[clnt_cnt++] = t_id;
 	    pthread_mutex_unlock(&mutx); //mutex unlock
-	    pthread_detach(t_id);
+	    //pthread_detach(t_id);
     
 	}
     
