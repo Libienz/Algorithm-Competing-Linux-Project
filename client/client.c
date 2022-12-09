@@ -44,25 +44,26 @@ int main() {
     //recv 함수는 소켓 sd를 통해 전송받은 메시지를 sizeof(buf)크기인 버퍼buf에 저장한다.
     //마지막 인자인 0은 flag고 send()함수에서 사용하는 플래그와 같다.
     printf("==> Connect Server\n");
-    myfileprint("settingmsg.txt");
+//    myfileprint("settingmsg.txt");
 
     
     if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
         perror("recv");
         exit(1);
     }
+    printf("%s\n",buf);
     if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
         perror("recv");
         exit(1);
     }
+    printf("%s\n",buf);
     if ((len = recv(sd, buf, sizeof(buf), 0)) == -1) {
         perror("recv");
         exit(1);
     }
+    printf("%s\n",buf);
 
-    buf[len] = '\0';
 
-    printf("==> From Server : %s\n", buf);
     //소켓을 닫는다.
     close(sd);
 }

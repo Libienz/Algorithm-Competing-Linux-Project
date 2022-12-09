@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFSIZE 257
+#define BUFSIZE 4096
 
 /*
    judgeproc
@@ -22,7 +22,9 @@ int main(int argc, char* argv[]) {
     FILE* fp;
     pid_t pid;
     int status, len;
+    int size;
     char buf[BUFSIZE];
+    char* sol;
     char model_input[BUFSIZE];
     char model_output[BUFSIZE];
     int fd1[2], fd2[2];
@@ -34,8 +36,13 @@ int main(int argc, char* argv[]) {
 	exit(1);
     }
 
-    //답지 읽어오기 
-    while (fgets(buf,BUFSIZE,fp) != NULL) {
+    
+
+    //답지 읽어오기
+    fread(buf, sizeof(char)*2, BUFSIZE, fp);
+    strtok(buf,":");
+    //5번 동안 반복 채점 사례가 5가지 이기 때문
+    for (int i = 0; i < 5; i++) {
 	
 	//유저 프로그램이 실행되었을 때 
 	//입력을 넘겨주고 출력을 받아올 파이프
@@ -52,7 +59,7 @@ int main(int argc, char* argv[]) {
 
 	//답지는 입력과 입력에 대한 정답을 ':'으로 구분 strtok을 이용해서 
 	//한가지 사례 입력과 입력에 대한 모범답안을 받는다.
-	strcpy(model_input, strtok(buf,":"));
+	strcpy(model_input, strtok(NULL,":"));
 	strcpy(model_output, strtok(NULL,":"));	
 
 	//파이프에 입력을 미리 넣어 놓는다.

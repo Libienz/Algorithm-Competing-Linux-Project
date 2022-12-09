@@ -7,17 +7,40 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
+
 
 #define PORTNUM 9000
-#define MAX_CLNT 2
 #define BUFSIZE 1024
-
+#define MAX_CLNT 256 // 최대 동시 접속 가능 수
+#define MAX_ROOM 128 // 서버가 열 수 있는 방 최대 수
+#define SERV_IP "192.168.219.107"
+void *handle_clnt(void *arg); 
 void myfileprint(char* path);
 void msgsend(int ns, char* buf);
 
+
+typedef struct {
+    //방제목
+    char title[30]; 
+    //socket descriptor로 유저 구분
+    int usr1; 
+    int usr2; 
+} room;
+
+/********* Critical Section***************/
+
+int clnt_cnt = 0; //연결된 클라이언트 수
+int clnt_socks[MAX_CLNT]; // 클라이언트 배열
+int room_cnt = 0; //현재 만들어진 방 수
+room rooms[MAX_ROOM]; //방 목록
+pthread_mutex_t mutx; //mutex 선언
+
+/********* Critical Section***************/
 int main() {
     char buf[BUFSIZE];
     struct sockaddr_in sin, cli;
+    pthread_t t_id;
     int sd, ns, clientlen = sizeof(cli);
     pid_t pid;
 
@@ -35,7 +58,7 @@ int main() {
     memset((char *)&sin, '\0', sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORTNUM); //HBO -> NBO
-    sin.sin_addr.s_addr = inet_addr("192.168.219.107"); //str IP addr -> bin
+    sin.sin_addr.s_addr = inet_addr(SERV_IP); //str IP addr -> bin
 
     //bind: 소켓 파일 기술자를 지정된 IPaddr/Port와 결합
     if (bind(sd, (struct sockaddr *) &sin, sizeof(sin))) {
@@ -49,38 +72,19 @@ int main() {
 	exit(1);
     }
 	
-    if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
-	perror("accept");
-	exit(1);
-     }
-
     while (1) {
-	
-/*        
-	sprintf(buf, "server connected");
-        if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
-	    perror("send");
+    
+	if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
+	    perror("accept");
 	    exit(1);
-	 }
-*/
-
-	//연결 성공을 알리고 settingmsg 출력
-	myfileprint("settingmsg.txt");	
-	while(1) {
-	    char buf[BUFSIZE];
-	    scanf("%s", buf);
-	    if (strcmp(buf, "ready") == 0) {
-		printf("me ready\n");
-		msgsend(ns, "상대 측 준비완료\n");
-	    }
-	    else {
-		printf("준비되었으면 ready를 입력해주세요\n");
-	    }
-
 	}
-
+	
+	pthread_mutex_lock(&mutx); //mutex lock
+	clnt_socks[clnt_cnt++] = ns;
+	pthread_mutex_unlock(&mutx); //mutex unlock
+	pthread_create(&t_id, NULL, handle_clnt,(void *)&ns);
+	pthread_detach(t_id);
     }
-
     
     //ready 들어올 때 까지 wait 
 	//ready 눌렀는데 상대방이 ready가 되지 않았다면 상대방의 ready 기다리는 중 이런식으로 출력
@@ -95,7 +99,60 @@ int main() {
     close(sd);
 
 }
+void *handle_clnt(void *arg){
 
+    char buf[BUFSIZE];
+    int join = 0;
+    int create = 0;
+    //client 소켓 디스크립터가 void 포인터로 들어왔기에 int로 형변환
+    int ns = *((int *)arg);
+    msgsend(ns, "server connected");
+    sleep(1);
+    msgsend(ns, "join or create battle");
+    sleep(1);
+    msgsend(ns, "input join or create");
+
+    
+    while (join ==0 && create ==0 ) {
+	if(recv(ns,buf,sizeof(buf) ,0) == -1) {
+	    perror("recv");
+	    exit(1);
+	}
+	if (strcmp("join", buf) == 0) {
+	    join = 1;
+	}
+	if (strcmp("create", buf) == 0) {
+	    create = 1;
+	}
+    }
+    if (join) {
+	//list rooms
+	for (int i = 0; i<room_cnt; i++) {
+	    msgsend(ns,rooms[i].title);
+	}
+	//participate room
+
+	//game start
+    }
+    if (create) {
+	//input room name
+	msgsend(ns,"input room name");
+	recv(ns,buf,sizeof(buf),0);
+	pthread_mutex_lock(&mutx); //mutex lock
+	strcpy(rooms[room_cnt].title,buf);
+	rooms[room_cnt].usr1 = ns;
+	pthread_mutex_unlock(&mutx); //mutex unlock
+	//wait
+    }
+}
+    
+    //if room filled start game 
+    
+    //generate rand num and send prb
+
+    
+
+    //if create then create
 void msgsend(int ns, char* buf) {
 
     if (send(ns, buf, strlen(buf) + 1, 0) == -1) {
@@ -103,6 +160,9 @@ void msgsend(int ns, char* buf) {
 	exit(1);
     }
 }
+
+
+
 void myfileprint(char* path) {
     
     FILE* fp;
