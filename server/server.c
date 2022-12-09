@@ -14,7 +14,7 @@
 
 
 #define PORTNUM 9000
-#define BUFSIZE 1024
+#define BUFSIZE 4096
 #define MAX_CLNT 2 // 최대 동시 접속 가능 수
 #define SERV_IP "192.168.219.107"
 #define QNUM 3 //문제 갯수
@@ -98,7 +98,7 @@ int main() {
 
 
 	//게임끝날 때 까지 기달 
-	while(!gamedone);
+	while(gamedone == 0);
 
 	//battle done 
 	pthread_detach(t_ids[0]);
@@ -114,12 +114,33 @@ int main() {
 void *handle_clnt(void *arg){
 
     char buf[BUFSIZE];
+    FILE* fp;
     int ns = *((int *)arg);
-    msgsend(ns, "서버와 연결되었습니다");
-    msgsend(ns, "상대방의 입장을 기다리는 중입니다...");
+    msgsend(ns, "서버와 연결되었습니다\n상대방의 입장을 기다리는 중입니다..");
     while (clnt_cnt < 2); //busy wating
     msgsend(ns,"상대방이 입장했습니다");
+    sleep(1);
     msgsend(ns, "서버가 random 문제를 출제 중입니다...");
+    sleep(1);
+    msgsend(ns, "문제가 설정 되었습니다.");
+    sleep(1);
+    msgsend(ns,"10초 후에 알고리즘 배틀을 시작합니다");
+    sleep(10);
+    //문제 출제 
+    if ((fp = fopen(qpath, "r")) == NULL) {
+	perror("question fopen");
+	exit(1);
+    }
+
+    while(fgets(buf, BUFSIZE, fp) != NULL) {
+	
+	sleep(1);
+	msgsend(ns,buf);
+	
+    }
+    //ftp 제출 대기 혹은 파일 통째로 제출받기 .. 
+
+
     
 }
     
@@ -129,7 +150,6 @@ void msgsend(int ns, char* buf) {
 	perror("send");
 	exit(1);
     }
-    sleep(1);
 }
 
 

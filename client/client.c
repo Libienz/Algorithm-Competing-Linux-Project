@@ -6,20 +6,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
+
 
 #define PORTNUM 9000
-#define BUFSIZE 256
+#define BUFSIZE 4096
 #define SERV_IP "192.168.219.107"
 
-void myfileprint(char* path);
-void rcvprint(int sd);
-void msgsend(int ns, char* buf);
+void *send_file(void *arg);
+void *recv_msg(void *arg);
 
 int main() {
     int sd, len;
     char buf[BUFSIZE];
     struct sockaddr_in sin;
-
+    pthread_t snd_thread, rcv_thread;
+    void *thread_return;
     //서버 IP 주소 지정과 포트 번호 설정
     //서버로 돌릴 컴퓨터 지정하고 IP 수정해야 함
 
@@ -44,57 +46,46 @@ int main() {
         exit(1);
     }
 
-    //recv 함수는 소켓 sd를 통해 전송받은 메시지를 sizeof(buf)크기인 버퍼buf에 저장한다.
-    //마지막 인자인 0은 flag고 send()함수에서 사용하는 플래그와 같다.
-    printf("==> Connect Server\n");
-//    myfileprint("settingmsg.txt");
-    rcvprint(sd);
-    rcvprint(sd);
-    rcvprint(sd);
+    //쓰레드 두개 생성 
+    //파일 보낼 때 사용할 쓰레드 
+    //서버에서 오는 메세지 수신할 쓰레드
+    pthread_create(&snd_thread, NULL, send_file, (void *)&sd);
+    pthread_create(&rcv_thread, NULL, recv_msg, (void *)&sd);
 
-    scanf("%s",buf);
-    msgsend(sd, buf);
+    //쓰레드 종료 대기 및 소멸 유도
+    pthread_join(snd_thread, &thread_return);
+    pthread_join(rcv_thread, &thread_return);
 
-    scanf("%s",buf);
-    msgsend(sd, buf);
-
-
-    //소켓을 닫는다.
     close(sd);
-}
-void msgsend(int ns, char* buf) {
-
-    if(send(ns,buf,strlen(buf)+1, 0) == -1) {
-	perror("send");
-	exit(1);
-    }
-}
-void rcvprint(int sd) {
-    
-    char buf[BUFSIZE];
-    int len;
-
-    if ((len=recv(sd,buf,sizeof(buf),0)) == -1) {
-	perror("recv");
-	exit(1);
-    }
-    printf("%s\n",buf);
+    return 0;
 }
 
+void *send_file(void *arg) {
 
-void myfileprint(char * path) {
+    //인자로 받은 sd casting
+    int sd = *((int *)arg);
 
-    FILE* fp;
-    char buf[BUFSIZE];
-    int n;
+    //ftp!
+}
 
-    fp = fopen(path, "r");
- 
-    while(fgets(buf, BUFSIZE,fp) != NULL) {
-       printf("%s",buf);
+void *recv_msg(void *arg) {
+    int str_len;
+    char msg[BUFSIZE];
+    //인자로 받은 sd casting
+    int sd = *((int *)arg);
+    while(1) {
+	//서버에서 들어온 메세지 수신
+	str_len = read(sd, msg, BUFSIZE-1);
+
+	//str_len이 -1이라는 건 소켓과 연결이 끊어졌다는 뜻
+	if (str_len == -1) {
+	    return (void *)-1; //pthread_join 실행
+	}
+
+	msg[str_len] = '\0';
+	printf("%s\n",msg);
     }
-    printf("\n");
 
-    fclose(fp);
+    return NULL;
 }
 
