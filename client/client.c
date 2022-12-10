@@ -15,7 +15,7 @@
 
 void *send_file(void *arg);
 void *recv_msg(void *arg);
-
+int gameset = 0;
 int main() {
     int sd, len;
     char buf[BUFSIZE];
@@ -71,6 +71,7 @@ void *send_file(void *arg) {
     char fn[BUFSIZE];
     
     //유저가 s를 입력할 때 까지 busywait
+    
     while(sendmod == 0) {
 	printf("enter 's' if you want to send\n");
 	if (getchar() == 's'){

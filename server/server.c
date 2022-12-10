@@ -199,6 +199,7 @@ void *handle_clnt(void *arg){
 	}
 	//컴파일 성공
 	else {
+	    char* argv[4];
 
 	    switch(pid = fork()) {
 		case -1:
@@ -206,7 +207,6 @@ void *handle_clnt(void *arg){
 		    exit(1);
 		    break;
 		case 0: 
-		    char* argv[4];
 		    argv[0] = "./judge/judgeproc";
 		    argv[1] = "usr";
 		    argv[2] = apath;
