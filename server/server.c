@@ -77,6 +77,7 @@ int main() {
 
 	while (clnt_cnt < 2) { 
 
+
 	    if ((ns = accept(sd, (struct sockaddr *)&cli, &clientlen)) == -1) {
 		perror("accept");
 		exit(1);
@@ -103,12 +104,12 @@ int main() {
 	while(winner == 0);
 
 	if (clnt_socks[0] == ns) {
-	    msgsend(ns, "님이이김");
-	    msgsend(clnt_socks[1], "님 짐 ㅋ");
+	    msgsend(ns, "You win");
+	    msgsend(clnt_socks[1], "You lose");
 	}
 	else {
-	    msgsend(clnt_socks[0], "님 짐 ㅋ");
-	    msgsend(clnt_socks[1], "님 이김");
+	    msgsend(clnt_socks[0], "You lose");
+	    msgsend(clnt_socks[1], "You win");
 	}
 
 
@@ -128,7 +129,7 @@ void *handle_clnt(void *arg){
 
     char buf[BUFSIZE];
     int str_len,status;
-    FILE* fp, *ufp;
+    FILE* fp;
     size_t fsize;
     int ns = *((int *)arg);
     pid_t pid;
@@ -155,10 +156,14 @@ void *handle_clnt(void *arg){
 	msgsend(ns,buf);
 	
   }
+    fclose(fp);
 
-    //승자가 나올 때 까지 반복
+    //승자가 나올 때 까지 유저의 제출을 기다리며 제출했다면 채점 시작
     while(winner==0) {
 
+	FILE *ufp;
+	remove("usr.c");
+	remove("usr");
 	//유저의 제출을 기다린다.
 	recv(ns,buf,sizeof(buf), 0);
 	//유저가 제출을 시작했다면 심판프로세스에 락을 걸고 사용한다. 
@@ -168,17 +173,18 @@ void *handle_clnt(void *arg){
 	    jg_inuse = 1;
 	    pthread_mutex_unlock(&mutx);
 	}
-	if ((ufp = fopen("usr.c", "a")) == NULL) {
+	if ((ufp = fopen("usr.c", "w")) == NULL) {
 	    perror("ufp fopen");
 	    exit(1);
 	}
        	//while ((str_len = read(ns,buf,BUFSIZE-1)) > 0) {
 
 	str_len = read(ns,buf,BUFSIZE-1);
-	buf[BUFSIZE] = '\0';
+	buf[str_len] = '\0';
 	printf("%s",buf);
 	//sleep(1);
-	fwrite(buf,sizeof(char)*2, str_len, ufp);
+	//fwrite(buf,sizeof(char)*2, str_len, ufp);
+	fputs(buf,ufp);
 	//}
 	fclose(ufp);
 	
@@ -195,7 +201,7 @@ void *handle_clnt(void *arg){
 	    pthread_mutex_lock(&mutx);
 	    jg_inuse--;
 	    pthread_mutex_unlock(&mutx);
-	    remove("usr.c");
+	//    remove("usr.c");
 	}
 	//컴파일 성공
 	else {
@@ -220,27 +226,21 @@ void *handle_clnt(void *arg){
 			msgsend(ns,"정답");
 			pthread_mutex_lock(&mutx);
 			winner = ns;
+			printf("winner : %d\n",winner);
 			pthread_mutex_unlock(&mutx);
 
-			remove("usr.c");
-			remove("usr");
+	//		remove("usr.c");
+	//		remove("usr");
 		    }
 		    else {
 			msgsend(ns,"오답");
-			remove("usr.c");
-			remove("usr");
+	//		remove("usr.c");
+	//		remove("usr");
 		    }
 	    }
-
-
-
 	}
 
     }
-
-
-
-
 
 }
     

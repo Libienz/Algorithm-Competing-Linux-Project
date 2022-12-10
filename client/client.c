@@ -62,6 +62,7 @@ int main() {
 
 void *send_file(void *arg) {
 
+    
     //인자로 받은 sd casting
     int sd = *((int *)arg);
     int fd;
@@ -70,28 +71,34 @@ void *send_file(void *arg) {
     char buf[BUFSIZE];
     char fn[BUFSIZE];
     
-    //유저가 s를 입력할 때 까지 busywait
-    
-    while(sendmod == 0) {
-	printf("enter 's' if you want to send\n");
-	if (getchar() == 's'){
-	    printf("filename: ");
-	    scanf("%s",fn);
-	    if ((fd = open(fn, O_RDONLY)) == -1) {
-		perror("wrong file name");
-	    }
-	    else sendmod=1;
-	}
-    }
-    strcpy(buf,"send start");
-    send(sd, buf, BUFSIZE, 0);
+    //게임이 끝날 때 까지 제출 반복 가능하도록
+    while(gameset == 0) {
 
-    while((n= read(fd,buf,BUFSIZE))>0) {
-	printf("%s",buf);
-	if(write(sd,buf,n) !=n) perror("write");	
-	
+	//유저가 s를 입력할 때 까지 busywait
+	while(sendmod == 0) {
+	    printf("enter 's' if you want to send\n");
+	    if (getchar() == 's'){
+		printf("filename: ");
+		scanf("%s",fn);
+		if ((fd = open(fn, O_RDONLY)) == -1) {
+		    perror("wrong file name");
+		}
+		else sendmod=1;
+	    }
+       }
+    
+	strcpy(buf,"send start");
+	send(sd, buf, BUFSIZE, 0);
+
+	//소켓을 통해 c 소스 제출 
+	while((n= read(fd,buf,BUFSIZE))>0) {
+	    printf("%s",buf);
+	    if(write(sd,buf,n) !=n) perror("write");	
+	}
+	sendmod = 0;
+	close(fd);
     }
-    while(1);
+    return NULL;
 }
 
 void *recv_msg(void *arg) {
@@ -102,6 +109,12 @@ void *recv_msg(void *arg) {
     while(1) {
 	//서버에서 들어온 메세지 수신
 	str_len = read(sd, msg, BUFSIZE-1);
+	msg[BUFSIZE] = '\0';
+	
+	if (strcmp(msg, "You lose") == 0 || strcmp(msg, "You win") == 0) {
+	    gameset = 1;
+	    break;
+	}
 
 	//str_len이 -1이라는 건 소켓과 연결이 끊어졌다는 뜻
 	if (str_len == -1) {
