@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
-
+#include <fcntl.h>
 
 #define PORTNUM 9000
 #define BUFSIZE 4096
@@ -64,8 +64,19 @@ void *send_file(void *arg) {
 
     //인자로 받은 sd casting
     int sd = *((int *)arg);
-
+    int fd;
+    int n;
+    char buf[BUFSIZE];
     //ftp!
+    if ((fd = open("test1", O_RDONLY))== -1) {
+	perror("question fopen");
+	exit(1);
+    }
+
+    while((n= read(fd,buf,BUFSIZE))>0) {
+	if( write(sd,buf,n) !=n) perror("write");	
+	
+    }
 }
 
 void *recv_msg(void *arg) {
