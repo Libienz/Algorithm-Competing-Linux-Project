@@ -66,17 +66,31 @@ void *send_file(void *arg) {
     int sd = *((int *)arg);
     int fd;
     int n;
+    int sendmod = 0;
     char buf[BUFSIZE];
-    //ftp!
-    if ((fd = open("test1", O_RDONLY))== -1) {
-	perror("question fopen");
-	exit(1);
+    char fn[BUFSIZE];
+    
+    //유저가 s를 입력할 때 까지 busywait
+    while(sendmod == 0) {
+	printf("enter 's' if you want to send\n");
+	if (getchar() == 's'){
+	    printf("filename: ");
+	    scanf("%s",fn);
+	    if ((fd = open(fn, O_RDONLY)) == -1) {
+		perror("wrong file name");
+	    }
+	    else sendmod=1;
+	}
     }
+    strcpy(buf,"send start");
+    send(sd, buf, BUFSIZE, 0);
 
     while((n= read(fd,buf,BUFSIZE))>0) {
-	if( write(sd,buf,n) !=n) perror("write");	
+	printf("%s",buf);
+	if(write(sd,buf,n) !=n) perror("write");	
 	
     }
+    while(1);
 }
 
 void *recv_msg(void *arg) {

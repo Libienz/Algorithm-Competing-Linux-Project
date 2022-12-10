@@ -30,11 +30,13 @@ int clnt_cnt = 0; //연결된 클라이언트 수
 int clnt_socks[MAX_CLNT]; // 클라이언트 배열
 pthread_t t_ids[MAX_CLNT];//쓰레드 아이디 배열
 int winner = 0;
+int jg_inuse = 0;
 pthread_mutex_t mutx; //mutex 선언
 
 /********* Critical Section***************/
 
 char qpath[BUFSIZE]; //랜덤으로 출제된 문제파일의 경로
+char apath[BUFSIZE]; //답지 경로
 int main() {
     
     int qnum;
@@ -93,16 +95,28 @@ int main() {
        srand(time(0));
        qnum = (rand() % QNUM) +1;
        sprintf(qpath,"./judge/questions/%d.txt",qnum);
+       sprintf(apath,"./judge/answers/%d.sol",qnum);
        
 
 
 	//게임끝날 때 까지 기달 
-	while(gamedone == 0);
+	while(winner == 0);
+
+	if (clnt_socks[0] == ns) {
+	    msgsend(ns, "님이이김");
+	    msgsend(clnt_socks[1], "님 짐 ㅋ");
+	}
+	else {
+	    msgsend(clnt_socks[0], "님 짐 ㅋ");
+	    msgsend(clnt_socks[1], "님 이김");
+	}
+
 
 	//battle done 
 	pthread_detach(t_ids[0]);
 	pthread_detach(t_ids[1]);
-	//clnt_
+	clnt_cnt--;
+	clnt_cnt--;
     }
 
 
@@ -113,9 +127,11 @@ int main() {
 void *handle_clnt(void *arg){
 
     char buf[BUFSIZE];
-    int str_len;
-    FILE* fp;
+    int str_len,status;
+    FILE* fp, *ufp;
+    size_t fsize;
     int ns = *((int *)arg);
+    pid_t pid;
     msgsend(ns, "서버와 연결되었습니다\n상대방의 입장을 기다리는 중입니다..");
     while (clnt_cnt < 2); //busy wating
     msgsend(ns,"상대방이 입장했습니다");
@@ -131,19 +147,101 @@ void *handle_clnt(void *arg){
 	perror("question fopen");
 	exit(1);
     }
+    
 
     while(fgets(buf, BUFSIZE, fp) != NULL) {
 	
 	sleep(1);
 	msgsend(ns,buf);
 	
+  }
+
+    //승자가 나올 때 까지 반복
+    while(winner==0) {
+
+	//유저의 제출을 기다린다.
+	recv(ns,buf,sizeof(buf), 0);
+	//유저가 제출을 시작했다면 심판프로세스에 락을 걸고 사용한다. 
+	while(jg_inuse == 1); 
+	if (jg_inuse = 0) {
+	    pthread_mutex_lock(&mutx);
+	    jg_inuse = 1;
+	    pthread_mutex_unlock(&mutx);
+	}
+	if ((ufp = fopen("usr.c", "a")) == NULL) {
+	    perror("ufp fopen");
+	    exit(1);
+	}
+       	//while ((str_len = read(ns,buf,BUFSIZE-1)) > 0) {
+
+	str_len = read(ns,buf,BUFSIZE-1);
+	buf[BUFSIZE] = '\0';
+	printf("%s",buf);
+	//sleep(1);
+	fwrite(buf,sizeof(char)*2, str_len, ufp);
+	//}
+	fclose(ufp);
+	
+	//유저가 제출한 소스코드는 이제 usr.c에 보관되어 있다.
+
+	//채점
+	int ret; 
+	ret = system("gcc -o usr usr.c");
+	printf("ret : %d\n",ret);
+	//컴파일 실패
+	if (ret != 0) {
+	    strcpy(buf, "컴파일 에러임 ㅋ");
+	    msgsend(ns, buf);
+	    pthread_mutex_lock(&mutx);
+	    jg_inuse--;
+	    pthread_mutex_unlock(&mutx);
+	    remove("usr.c");
+	}
+	//컴파일 성공
+	else {
+
+	    switch(pid = fork()) {
+		case -1:
+		    perror("fork");
+		    exit(1);
+		    break;
+		case 0: 
+		    char* argv[4];
+		    argv[0] = "./judge/judgeproc";
+		    argv[1] = "usr";
+		    argv[2] = apath;
+		    argv[3] = (char *)NULL;
+		    execv("./judge/judgeproc",argv);
+
+		default:
+		    wait(&status);
+		    status = status >> 8;
+		    if (status == 1) {
+			msgsend(ns,"정답");
+			pthread_mutex_lock(&mutx);
+			winner = ns;
+			pthread_mutex_unlock(&mutx);
+
+			remove("usr.c");
+			remove("usr");
+		    }
+		    else {
+			msgsend(ns,"오답");
+			remove("usr.c");
+			remove("usr");
+		    }
+	    }
+
+
+
+	}
+
     }
-    //ftp 제출 대기 혹은 파일 통째로 제출받기 .. 
-    while (winner==0) {
-	str_len = read(ns, buf, BUFSIZE-1);
 
 
-    
+
+
+
 }
     
 void msgsend(int ns, char* buf) {
