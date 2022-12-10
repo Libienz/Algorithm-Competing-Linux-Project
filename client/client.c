@@ -86,6 +86,6 @@ void *recv_msg(void *arg) {
 	printf("%s\n",msg);
     }
 
-    return NULL;
+   return NULL;
 }
 

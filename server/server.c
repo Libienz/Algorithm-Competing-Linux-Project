@@ -18,10 +18,10 @@
 #define MAX_CLNT 2 // 최대 동시 접속 가능 수
 #define SERV_IP "192.168.219.107"
 #define QNUM 3 //문제 갯수
+
 void *handle_clnt(void *arg); 
 void myfileprint(char* path);
 void msgsend(int ns, char* buf);
-
 
 
 /********* Critical Section***************/
@@ -29,20 +29,19 @@ void msgsend(int ns, char* buf);
 int clnt_cnt = 0; //연결된 클라이언트 수
 int clnt_socks[MAX_CLNT]; // 클라이언트 배열
 pthread_t t_ids[MAX_CLNT];//쓰레드 아이디 배열
+int winner = 0;
 pthread_mutex_t mutx; //mutex 선언
 
 /********* Critical Section***************/
-char qpath[BUFSIZE]; //랜덤으로 출제된 문제파일의 경로
 
+char qpath[BUFSIZE]; //랜덤으로 출제된 문제파일의 경로
 int main() {
     
     int qnum;
-    int gamedone = 0;
     char buf[BUFSIZE];
     struct sockaddr_in sin, cli;
     pthread_t t_id;
     int sd, ns, clientlen = sizeof(cli);
-    pid_t pid;
 
      
     //Socket 생성
@@ -82,8 +81,8 @@ int main() {
 	    }
 	
 	    pthread_mutex_lock(&mutx); //mutex lock
-	    pthread_create(&t_id, NULL, handle_clnt,(void *)&ns);
 	    clnt_socks[clnt_cnt] = ns;
+	    pthread_create(&t_id, NULL, handle_clnt,(void *)&ns);
 	    t_ids[clnt_cnt++] = t_id;
 	    pthread_mutex_unlock(&mutx); //mutex unlock
 	    //pthread_detach(t_id);
@@ -114,19 +113,20 @@ int main() {
 void *handle_clnt(void *arg){
 
     char buf[BUFSIZE];
+    int str_len;
     FILE* fp;
     int ns = *((int *)arg);
     msgsend(ns, "서버와 연결되었습니다\n상대방의 입장을 기다리는 중입니다..");
     while (clnt_cnt < 2); //busy wating
     msgsend(ns,"상대방이 입장했습니다");
     sleep(1);
-    msgsend(ns, "서버가 random 문제를 출제 중입니다...");
+    msgsend(ns, "서버가 random 문제를 설정 중입니다...");
     sleep(1);
     msgsend(ns, "문제가 설정 되었습니다.");
     sleep(1);
     msgsend(ns,"10초 후에 알고리즘 배틀을 시작합니다");
     sleep(10);
-    //문제 출제 
+    //문제 전송
     if ((fp = fopen(qpath, "r")) == NULL) {
 	perror("question fopen");
 	exit(1);
@@ -139,6 +139,8 @@ void *handle_clnt(void *arg){
 	
     }
     //ftp 제출 대기 혹은 파일 통째로 제출받기 .. 
+    while (winner==0) {
+	str_len = read(ns, buf, BUFSIZE-1);
 
 
     
