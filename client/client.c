@@ -75,17 +75,17 @@ void *send_file(void *arg) {
     while(gameset == 0) {
 
 	//유저가 s를 입력할 때 까지 busywait
-	while(sendmod == 0) {
-	    printf("enter 's' if you want to send\n");
-	    if (getchar() == 's'){
-		printf("filename: ");
-		scanf("%s",fn);
-		if ((fd = open(fn, O_RDONLY)) == -1) {
-		    perror("wrong file name");
-		}
-		else sendmod=1;
+	if (getchar() == 's' ){
+	    printf("filename: ");
+	    scanf("%s",fn);
+	    if ((fd = open(fn, O_RDONLY)) == -1) {
+		perror("wrong file name");
+		continue;
 	    }
-       }
+	}
+	else continue;
+	
+    
     
 	strcpy(buf,"send start");
 	send(sd, buf, BUFSIZE, 0);
@@ -104,14 +104,23 @@ void *send_file(void *arg) {
 void *recv_msg(void *arg) {
     int str_len;
     char msg[BUFSIZE];
+    char yl[BUFSIZE];
+    char yw[BUFSIZE];
     //인자로 받은 sd casting
     int sd = *((int *)arg);
+
+    strcpy(yl,"You lose..");
+    strcpy(yw,"You win..");
     while(1) {
 	//서버에서 들어온 메세지 수신
 	str_len = read(sd, msg, BUFSIZE-1);
-	msg[BUFSIZE] = '\0';
+	msg[str_len] = '\0';
+
 	
-	if (strcmp(msg, "You lose") == 0 || strcmp(msg, "You win") == 0) {
+	if (strcmp(msg, yl) == 0 || strcmp(msg, yw) == 0) {
+	    fprintf(stderr,"%s gameset 엔터를 눌러 종료하십시오",msg);
+	    //?????????
+	    //printf("game set 엔터를 눌러 종료하십시오");
 	    gameset = 1;
 	    break;
 	}

@@ -43,6 +43,7 @@ int main() {
     char buf[BUFSIZE];
     struct sockaddr_in sin, cli;
     pthread_t t_id;
+    void *thread_return;
     int sd, ns, clientlen = sizeof(cli);
 
      
@@ -88,7 +89,6 @@ int main() {
 	    pthread_create(&t_id, NULL, handle_clnt,(void *)&ns);
 	    t_ids[clnt_cnt++] = t_id;
 	    pthread_mutex_unlock(&mutx); //mutex unlock
-	    //pthread_detach(t_id);
     
 	}
     
@@ -103,25 +103,26 @@ int main() {
 	//게임끝날 때 까지 기달 
 	while(winner == 0);
 
-	if (clnt_socks[0] == ns) {
-	    msgsend(ns, "You win");
-	    msgsend(clnt_socks[1], "You lose");
+
+	if (clnt_socks[0] == winner) {
+	    msgsend(winner, "You win..");
+	    msgsend(clnt_socks[1], "You lose..");
 	}
 	else {
-	    msgsend(clnt_socks[0], "You lose");
-	    msgsend(clnt_socks[1], "You win");
+	    msgsend(clnt_socks[0], "You lose..");
+	    msgsend(clnt_socks[1], "You win..");
 	}
 
 
 	//battle done 
-	pthread_detach(t_ids[0]);
-	pthread_detach(t_ids[1]);
-	clnt_cnt--;
-	clnt_cnt--;
+	pthread_join(t_ids[0], &thread_return);
+	pthread_join(t_ids[1], &thread_return);
+
+	close(clnt_socks[--clnt_cnt]);
+	close(clnt_socks[--clnt_cnt]);
+	winner = 0;
     }
 
-
-    close(ns);
     close(sd);
 
 }
@@ -165,7 +166,11 @@ void *handle_clnt(void *arg){
 	remove("usr.c");
 	remove("usr");
 	//유저의 제출을 기다린다.
+	//여기..?
 	recv(ns,buf,sizeof(buf), 0);
+	if (winner != 0 ) {
+	    continue;
+	}
 	//유저가 제출을 시작했다면 심판프로세스에 락을 걸고 사용한다. 
 	while(jg_inuse == 1); 
 	if (jg_inuse = 0) {
@@ -177,15 +182,14 @@ void *handle_clnt(void *arg){
 	    perror("ufp fopen");
 	    exit(1);
 	}
-       	//while ((str_len = read(ns,buf,BUFSIZE-1)) > 0) {
 
+	//유저 제출물 소켓에서 읽어와서 usr.c에 저장
 	str_len = read(ns,buf,BUFSIZE-1);
 	buf[str_len] = '\0';
-	printf("%s",buf);
-	//sleep(1);
-	//fwrite(buf,sizeof(char)*2, str_len, ufp);
+	if(winner != 0) {
+	    continue;
+	}
 	fputs(buf,ufp);
-	//}
 	fclose(ufp);
 	
 	//유저가 제출한 소스코드는 이제 usr.c에 보관되어 있다.
@@ -201,7 +205,7 @@ void *handle_clnt(void *arg){
 	    pthread_mutex_lock(&mutx);
 	    jg_inuse--;
 	    pthread_mutex_unlock(&mutx);
-	//    remove("usr.c");
+	    remove("usr.c");
 	}
 	//컴파일 성공
 	else {
@@ -218,6 +222,7 @@ void *handle_clnt(void *arg){
 		    argv[2] = apath;
 		    argv[3] = (char *)NULL;
 		    execv("./judge/judgeproc",argv);
+		    break;
 
 		default:
 		    wait(&status);
@@ -226,17 +231,15 @@ void *handle_clnt(void *arg){
 			msgsend(ns,"정답");
 			pthread_mutex_lock(&mutx);
 			winner = ns;
-			printf("winner : %d\n",winner);
+			jg_inuse = 0;
 			pthread_mutex_unlock(&mutx);
 
-	//		remove("usr.c");
-	//		remove("usr");
 		    }
 		    else {
 			msgsend(ns,"오답");
-	//		remove("usr.c");
-	//		remove("usr");
+			jg_inuse = 0;
 		    }
+		    break;
 	    }
 	}
 
