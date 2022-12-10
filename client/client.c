@@ -11,7 +11,7 @@
 
 #define PORTNUM 9000
 #define BUFSIZE 4096
-#define SERV_IP "192.168.219.107"
+#define SERV_IP "192.168.123.102"
 
 void *send_file(void *arg);
 void *recv_msg(void *arg);
@@ -40,7 +40,6 @@ int main() {
 
     //connect 함수로 클라이언트가 서버에 접속 요청
     //sd가 가리키는 소켓을 sin 이 가리키는 주소로 연결한다, 마지막인자는 sin의 크기
-    printf("==> Create Socket\n");
     if (connect(sd, (struct sockaddr *)&sin, sizeof(sin))) {
         perror("connect");
         exit(1);
@@ -76,10 +75,11 @@ void *send_file(void *arg) {
 
 	//유저가 s를 입력할 때 까지 busywait
 	if (getchar() == 's' ){
-	    printf("filename: ");
+	    printf("제출할 파일이름을 입력해주세요: ");
 	    scanf("%s",fn);
 	    if ((fd = open(fn, O_RDONLY)) == -1) {
 		perror("wrong file name");
+		fprintf(stderr,"s를 입력하여 파일을 제출하세요!\n");
 		continue;
 	    }
 	}
@@ -110,7 +110,7 @@ void *recv_msg(void *arg) {
     int sd = *((int *)arg);
 
     strcpy(yl,"You lose..");
-    strcpy(yw,"You win..");
+    strcpy(yw,"You win!!");
     while(1) {
 	//서버에서 들어온 메세지 수신
 	str_len = read(sd, msg, BUFSIZE-1);
@@ -118,9 +118,8 @@ void *recv_msg(void *arg) {
 
 	
 	if (strcmp(msg, yl) == 0 || strcmp(msg, yw) == 0) {
-	    fprintf(stderr,"%s gameset 엔터를 눌러 종료하십시오",msg);
-	    //?????????
-	    //printf("game set 엔터를 눌러 종료하십시오");
+	    fprintf(stderr,"%s 게임끝! 엔터를 눌러 종료하십시오",msg);
+	    //printf로 하면 stdout이 stdin으로 들어가버려서 stderr로 사용 
 	    gameset = 1;
 	    break;
 	}

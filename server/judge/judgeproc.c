@@ -121,23 +121,14 @@ int main(int argc, char* argv[]) {
 		    perror("read");
 		    exit(1);
 		}
-//		while (buf[len] == '\n' || buf[len] == '\t' || buf[len] == ' ') len--;
-//		if (buf[len-1] == '\n') {
-//		    buf[len-1] = '\0';
-//		    len--;
-//		}
-//		else {
-//		    buf[len] = '\0';
-//		}
 
-		//buf[len] = '\0';
 		len = strlen(model_output);
 		buf[len-1]= '\0';
 		model_output[len-1] = '\0';
-		printf("buf: %s\n",buf);
-		printf("buf.len %ld\n", strlen(buf));
-		printf("model: %s\n",model_output);
-		printf("mod.len %ld\n", strlen(model_output));
+		printf("유저 프로세스의 출력값: %s\n",buf);
+	//	printf("buf.len %ld\n", strlen(buf));
+		printf("모범답안: %s\n",model_output);
+	//	printf("mod.len %ld\n", strlen(model_output));
 
 		//특정 입력을 주었을 때 자식의 답이 모범출력과 다르다면 오답
 		if (strcmp(buf,model_output) != 0) {

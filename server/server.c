@@ -16,13 +16,12 @@
 #define PORTNUM 9000
 #define BUFSIZE 4096
 #define MAX_CLNT 2 // 최대 동시 접속 가능 수
-#define SERV_IP "192.168.219.107"
+#define SERV_IP "192.168.123.102"
 #define QNUM 3 //문제 갯수
 
 void *handle_clnt(void *arg); 
-void myfileprint(char* path);
 void msgsend(int ns, char* buf);
-
+void showrule(int ns);
 
 /********* Critical Section***************/
 
@@ -37,6 +36,19 @@ pthread_mutex_t mutx; //mutex 선언
 
 char qpath[BUFSIZE]; //랜덤으로 출제된 문제파일의 경로
 char apath[BUFSIZE]; //답지 경로
+
+char showRule[BUFSIZE]="\n========================================\n"
+"알고리즘 대결을 위한 규칙을 설명해드리겠습니다.\n"
+"1. 참가자는 터미널 창을 하나 더 띄워서 src 편집을 준비하세요.\n"
+"2. 새로 띄운 창을 cd 명령을 통해 실행시킨 client 프로그램과 같은 디렉터리로 이동하세요.\n"
+"3. 이동한 디렉터리에 작성한 C파일을 저장하세요.\n\n"
+"제출방법은 다음과 같습니다!\n"
+"1. 문제가 출력되고 s를 입력하여 파일을 제출하세요! 라는 문구가 출력되었을때!\n"
+"2. s를 입력한뒤 엔터를 누릅니다.\n"
+"3. 제출할 파일이름을 입력해주세요 라는 문구가 출력되면 작성한 C파일을 정확하게 입력해주세요.\n"
+"이제 상대방보다 빠르게 문제를 제출해봅시다! good luck!\n"
+"========================================\n";
+
 int main() {
     
     int qnum;
@@ -105,12 +117,12 @@ int main() {
 
 
 	if (clnt_socks[0] == winner) {
-	    msgsend(winner, "You win..");
+	    msgsend(winner, "You win!!");
 	    msgsend(clnt_socks[1], "You lose..");
 	}
 	else {
 	    msgsend(clnt_socks[0], "You lose..");
-	    msgsend(clnt_socks[1], "You win..");
+	    msgsend(clnt_socks[1], "You win!!");
 	}
 
 
@@ -134,15 +146,17 @@ void *handle_clnt(void *arg){
     size_t fsize;
     int ns = *((int *)arg);
     pid_t pid;
-    msgsend(ns, "서버와 연결되었습니다\n상대방의 입장을 기다리는 중입니다..");
+    msgsend(ns, "서버와 연결되었습니다.\n상대방의 입장을 기다리는 중입니다..");
     while (clnt_cnt < 2); //busy wating
     msgsend(ns,"상대방이 입장했습니다");
     sleep(1);
-    msgsend(ns, "서버가 random 문제를 설정 중입니다...");
+    msgsend(ns, "서버가 문제를 설정 중입니다...");
     sleep(1);
     msgsend(ns, "문제가 설정 되었습니다.");
     sleep(1);
-    msgsend(ns,"10초 후에 알고리즘 배틀을 시작합니다");
+    msgsend(ns,"10초 후에 알고리즘 배틀을 시작합니다.");
+    sleep(1);
+    showrule(ns);
     sleep(10);
     //문제 전송
     if ((fp = fopen(qpath, "r")) == NULL) {
@@ -153,10 +167,11 @@ void *handle_clnt(void *arg){
 
     while(fgets(buf, BUFSIZE, fp) != NULL) {
 	
-	sleep(1);
+	usleep(500000);
 	msgsend(ns,buf);
 	
-  }
+    }
+    msgsend(ns,"s를 입력하여 파일을 제출하세요!"); 
     fclose(fp);
 
     //승자가 나올 때 까지 유저의 제출을 기다리며 제출했다면 채점 시작
@@ -166,7 +181,6 @@ void *handle_clnt(void *arg){
 	remove("usr.c");
 	remove("usr");
 	//유저의 제출을 기다린다.
-	//여기..?
 	recv(ns,buf,sizeof(buf), 0);
 	if (winner != 0 ) {
 	    continue;
@@ -197,10 +211,10 @@ void *handle_clnt(void *arg){
 	//채점
 	int ret; 
 	ret = system("gcc -o usr usr.c");
-	printf("ret : %d\n",ret);
+//	printf("ret : %d\n",ret);
 	//컴파일 실패
 	if (ret != 0) {
-	    strcpy(buf, "컴파일 에러임 ㅋ");
+	    strcpy(buf, "컴파일 에러 발생\ns를 입력하여 파일을 제출하세요!");
 	    msgsend(ns, buf);
 	    pthread_mutex_lock(&mutx);
 	    jg_inuse--;
@@ -228,7 +242,7 @@ void *handle_clnt(void *arg){
 		    wait(&status);
 		    status = status >> 8;
 		    if (status == 1) {
-			msgsend(ns,"정답");
+			msgsend(ns,"정답입니다!");
 			pthread_mutex_lock(&mutx);
 			winner = ns;
 			jg_inuse = 0;
@@ -236,7 +250,7 @@ void *handle_clnt(void *arg){
 
 		    }
 		    else {
-			msgsend(ns,"오답");
+			msgsend(ns,"오답입니다...\ns를 입력하여 파일을 제출하세요!");
 			jg_inuse = 0;
 		    }
 		    break;
@@ -255,20 +269,22 @@ void msgsend(int ns, char* buf) {
     }
 }
 
-
-
-void myfileprint(char* path) {
-    
-    FILE* fp;
-    char buf[BUFSIZE];
-    int n;
-
-    fp = fopen(path, "r");
-
-    while(fgets(buf, BUFSIZE,fp) != NULL) {
-	printf("%s",buf);
-    }
-    printf("\n");
-
-    fclose(fp);
+void showrule(int ns){
+	char *showRule[11];
+	showRule[0]="\n========================================\n";
+	showRule[1]="알고리즘 대결을 위한 규칙을 설명해드리겠습니다.\n";
+        showRule[2]="1. 참가자는 터미널 창을 하나 더 띄워서 src 편집을 준비하세요.(해당 터미널에서는 파일 제출을 위해 서버와 통신을 유지하고 있기 때문에 추가적인 터미널이 필요합니다!)\n";
+        showRule[3]="2. 새로 띄운 창을 cd 명령을 통해 실행시킨 client 프로그램과 같은 디렉터리로 이동하세요.(src파일의 경로가 해당 위치여야만 제출이 원활하게 이루어집니다!)\n";
+        showRule[4]="3. 이동한 위치에서 문제를 마음껏 풀어주세요!\n\n";
+        showRule[5]="제출방법은 다음과 같습니다!\n";
+        showRule[6]="1. 문제가 출력되고 s를 입력하여 파일을 제출하세요! 라는 문구가 출력되었을때!\n";
+        showRule[7]="2. s를 입력한뒤 엔터를 누릅니다.\n";
+        showRule[8]="3. 제출할 파일이름을 입력해주세요 라는 문구가 출력되면 작성한 C파일을 정확하게 입력해주세요.\n";
+        showRule[9]="이제 상대방보다 빠르게 문제를 제출해봅시다! good luck!\n";
+        showRule[10]="========================================\n";
+	
+	for(int i=0; i<11; i++){
+		msgsend(ns,showRule[i]);
+		usleep(500000);
+	}
 }
