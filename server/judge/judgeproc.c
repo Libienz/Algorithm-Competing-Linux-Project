@@ -10,8 +10,11 @@
 /*
    judgeproc
    명령행으로 받은 프로그램이 특정 알고리즘 문제에 대해 
-   정답인지 확인하는 채점 프로세스
-   입출력 모범사례가 들어있는 답지를 대입해 봄으로써 정답인지 확인한다.
+   정답인지 확인하는 채점 프로그램
+   입출력 모범사례가 5가지가 들어있는 답지를 참고하며
+   유저 프로그램에게 입력을 넣어 모범출력을 내는지 확인하는 방식으로 채점한다.
+   유저 프로그램은 후에 fork를 이용해 실행되는데 
+   양방향 파이프를 설정하여 유저 프로그램으로 입력을 넘기고 출력을 체크한다.
    argv[1]: execfn (실행파일명)
    argv[2]: solfn  (답지)
    사용하기 위한 명령은 다음과 같다
@@ -42,6 +45,7 @@ int main(int argc, char* argv[]) {
     //답지 읽어오기
     fread(buf, sizeof(char)*2, BUFSIZE, fp);
     strtok(buf,":");
+    printf("\n============제출물 도착 채점 시작==================\n");
     //5번 동안 반복 채점 사례가 5가지 이기 때문
     for (int i = 0; i < 5; i++) {
 	
@@ -80,12 +84,12 @@ int main(int argc, char* argv[]) {
 		close(fd1[1]);
 		close(fd2[0]);
 
-		//자식 프로세스는 표준 입력을 fd[0]이 가리키는 파이프에서 읽는다
+		//자식 프로세스는 표준 입력을 fd1[0]이 가리키는 파이프에서 읽는다
 		if(fd1[0] != 0) {
 		    dup2(fd1[0], 0);
 		    close(fd1[0]);
 		}
-		//자식 프로세스는 자신의 표준 출력을 fd[2]가 가리키는 파이프로 보낸다
+		//자식 프로세스는 자신의 표준 출력을 fd2[1]가 가리키는 파이프로 보낸다
 		if(fd2[1] != 1) {
 		    dup2(fd2[1], 1);
 		    close(fd2[1]);
@@ -125,14 +129,16 @@ int main(int argc, char* argv[]) {
 		len = strlen(model_output);
 		buf[len-1]= '\0';
 		model_output[len-1] = '\0';
-		printf("유저 프로세스의 출력값: %s\n",buf);
-	//	printf("buf.len %ld\n", strlen(buf));
-		printf("모범답안: %s\n",model_output);
-	//	printf("mod.len %ld\n", strlen(model_output));
+		printf("case %d\n", i+1);
+		printf("예시 입력\n");
+		printf("%s\n",model_input);
+		printf("예시 입력에 대한 모범 출력:  %s\n",model_output);
+		printf("유저 프로세스의 출력값: %s\n\n",buf);
 
 		//특정 입력을 주었을 때 자식의 답이 모범출력과 다르다면 오답
 		if (strcmp(buf,model_output) != 0) {
-		    printf("오답\n");
+		    printf("user process 오답\n");
+		    printf("\n============채점완료==================\n");
 		    return -1;
 		}
 		//파이프 닫아주기
@@ -143,7 +149,8 @@ int main(int argc, char* argv[]) {
     }
 
     //모든 case에 대해 모범출력을 보였다면 정답
-    printf("정답\n");
+    printf("user process 정답\n");
+    printf("\n============채점완료==================\n");
     return 1;
 
 }
